@@ -2,8 +2,9 @@
 
 - [x] Basic GUI window
 - [x] Start/Stop auto-clicker with button
-- [ ] Set click interval
-- [ ] Select click position
+- [x] Set click interval
+- [x] Select click position with inputs in the GUI
+- [ ] Select click position by clicking point on screen
 - [ ] Run for period of time
 - [ ] Start/Stop auto-clicker with keypress
 - [ ] Support list of individual actions
