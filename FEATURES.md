@@ -1,7 +1,7 @@
 # Feature List
 
 - [x] Basic GUI window
-- [ ] Start/Stop auto-clicker with button
+- [x] Start/Stop auto-clicker with button
 - [ ] Set click interval
 - [ ] Select click position
 - [ ] Run for period of time
