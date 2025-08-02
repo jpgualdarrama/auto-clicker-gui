@@ -4,7 +4,7 @@
 - [x] Start/Stop auto-clicker with button
 - [x] Set click interval
 - [x] Select click position with inputs in the GUI
-- [ ] Select click position by clicking point on screen
+- [x] Select click position by moving mouse to point on screen and pressing a hotkey
 - [ ] Run for period of time
 - [ ] Start/Stop auto-clicker with keypress
 - [ ] Support list of individual actions

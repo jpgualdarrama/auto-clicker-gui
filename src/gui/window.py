@@ -48,6 +48,36 @@ class Window:
         self.y_entry.insert(0, "0")
         self.y_entry.pack()
 
+
+        # Button to initiate position picking
+        self.pick_position_button = Button(master, text="Pick Position (F8)", command=self.enable_position_pick)
+        self.pick_position_button.pack()
+
+        self._picking_position = False
+
+    def enable_position_pick(self):
+        """
+        Enable position picking mode. Next F8 press will set position.
+        """
+        if not self._picking_position:
+            self._picking_position = True
+            self.label.config(text="Move mouse to desired position and press F8")
+            self.master.bind('<F8>', self.set_position_from_mouse)
+
+    def set_position_from_mouse(self, event=None):
+        """
+        Set X and Y entry fields to current mouse position when F8 is pressed, only if picking mode is enabled.
+        """
+        if self._picking_position:
+            x, y = pyautogui.position()
+            self.x_entry.delete(0, 'end')
+            self.x_entry.insert(0, str(x))
+            self.y_entry.delete(0, 'end')
+            self.y_entry.insert(0, str(y))
+            self.label.config(text=f"Position set to ({x}, {y}) via F8")
+            self._picking_position = False
+            self.master.unbind('<F8>')
+
     def parse_interval(self, value):
         """
         Parse the interval value from string input. Returns a positive float.
