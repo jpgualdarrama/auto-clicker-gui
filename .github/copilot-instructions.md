@@ -3,6 +3,9 @@
 ## Overview
 This project is a Python-based auto-clicker GUI tool for Windows. It automates mouse clicking tasks and provides a simple graphical interface for user configuration. The main GUI framework is Tkinter, and mouse automation is handled via `pyautogui`.
 
+## Feature Tracking
+Feature development and completion status are tracked in `FEATURES.md` in the project root. Use this file to view, add, or mark features as complete. Features are managed as a checklist for easy progress tracking.
+
 ## Architecture
 - **Entry Point:** `src/main.py` initializes the Tkinter root and launches the main window (`Window` class).
 - **GUI Logic:** `src/gui/window.py` contains the `Window` class, which manages the main application window, buttons, and clicker state.
