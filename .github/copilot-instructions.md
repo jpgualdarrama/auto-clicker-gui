@@ -23,6 +23,11 @@ Feature development and completion status are tracked in `FEATURES.md` in the pr
 - **Debugging:**
   - Use print statements or Tkinter label updates for quick feedback.
   - GUI changes are reflected by editing `window.py`.
+- **Documentation**
+  - Add documentation comments in the code using standard formats (e.g., docstrings).
+  - Update `README.md` for user-facing documentation.
+- **Testing:**
+  - After making changes, run the app to ensure the GUI still behaves as expected.
 
 ## Project-Specific Patterns
 - **GUI Pattern:**

@@ -1,7 +1,16 @@
+
 from tkinter import Label, Button
 
 class Window:
+    """
+    Main application window for the Auto Clicker GUI tool.
+    Manages GUI widgets, event handlers, and clicker state.
+    """
     def __init__(self, master):
+        """
+        Initialize the main window, widgets, and state variables.
+        :param master: Tkinter root window
+        """
         self.master = master
         master.title("Auto Clicker")
 
@@ -17,9 +26,15 @@ class Window:
         self.is_clicking = False
 
     def start_clicking(self):
+        """
+        Event handler for the Start button. Sets clicking state to True and updates label.
+        """
         self.is_clicking = True
         self.label.config(text="Clicking...")
 
     def stop_clicking(self):
+        """
+        Event handler for the Stop button. Sets clicking state to False and updates label.
+        """
         self.is_clicking = False
         self.label.config(text="Stopped")
