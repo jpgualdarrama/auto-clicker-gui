@@ -23,11 +23,13 @@ def test_parse_interval_positive_float():
     assert win.parse_interval("0.5") == 0.5
 
 def test_parse_interval_negative_integer():
-    """Should default to 0.1 for negative integer string."""
+    """Should raise ValueError for negative integer string."""
     win = Window(tk.Tk())
-    assert win.parse_interval("-3") == 0.1
+    with pytest.raises(ValueError):
+        win.parse_interval("-3")
 
 def test_parse_interval_non_numeric():
-    """Should default to 0.1 for non-numeric string."""
+    """Should raise ValueError for non-numeric string."""
     win = Window(tk.Tk())
-    assert win.parse_interval("abc") == 0.1
+    with pytest.raises(ValueError):
+        win.parse_interval("abc")

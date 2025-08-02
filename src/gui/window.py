@@ -35,26 +35,64 @@ class Window:
         self.interval_entry.insert(0, "0.1")
         self.interval_entry.pack()
 
+        # X and Y position inputs
+        self.x_label = Label(master, text="X Position:")
+        self.x_label.pack()
+        self.x_entry = Entry(master)
+        self.x_entry.insert(0, "0")
+        self.x_entry.pack()
+
+        self.y_label = Label(master, text="Y Position:")
+        self.y_label.pack()
+        self.y_entry = Entry(master)
+        self.y_entry.insert(0, "0")
+        self.y_entry.pack()
+
     def parse_interval(self, value):
         """
-        Parse the interval value from string input. Returns a positive float or default 0.1.
+        Parse the interval value from string input. Returns a positive float.
+        Raises ValueError if invalid.
         """
-        try:
-            interval = float(value)
-            if interval > 0:
-                return interval
-        except ValueError:
-            pass
-        return 0.1
+        # float() will raise ValueError if conversion fails
+        interval = float(value)
+        if interval > 0:
+            return interval
+        raise ValueError("Interval must be a positive number.")
+
+    def parse_position(self):
+        """
+        Parse x and y position from input boxes. Returns tuple (x, y) as integers, clamped to screen bounds.
+        Raises ValueError if invalid.
+        """
+
+        # int() will raise ValueError if conversion fails
+        x = int(self.x_entry.get())
+        y = int(self.y_entry.get())
+        screen_width, screen_height = pyautogui.size()
+        x = max(0, min(x, screen_width - 1))
+        y = max(0, min(y, screen_height - 1))
+        return x, y
 
     def start_clicking(self):
         """
         Event handler for the Start button. Sets clicking state to True and updates label.
+        Only starts clicking if interval and position are valid.
         """
         if not self.is_clicking:
+            try:
+                interval = self.parse_interval(self.interval_entry.get())
+            except ValueError:
+                self.label.config(text="Invalid interval. Please enter a positive number.")
+                return
+            try:
+                position = self.parse_position()
+            except ValueError:
+                self.label.config(text="Invalid position. Please enter valid X and Y coordinates.")
+                return
             self.is_clicking = True
             self.label.config(text="Clicking...")
-            self.interval = self.parse_interval(self.interval_entry.get())
+            self.interval = interval
+            self.position = position
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
 
@@ -71,5 +109,5 @@ class Window:
         Designed for testability and clarity.
         """
         while self.is_clicking:
-            pyautogui.click()
+            pyautogui.click(*self.position)
             pyautogui.sleep(self.interval)
