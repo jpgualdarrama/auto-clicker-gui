@@ -1,3 +1,5 @@
+from tkinter import Label, Button
+
 class Window:
     def __init__(self, master):
         self.master = master
