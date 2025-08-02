@@ -1,5 +1,7 @@
 
 from tkinter import Label, Button
+import threading
+import pyautogui
 
 class Window:
     """
@@ -24,13 +26,17 @@ class Window:
         self.stop_button.pack()
 
         self.is_clicking = False
+        self.click_thread = None
 
     def start_clicking(self):
         """
         Event handler for the Start button. Sets clicking state to True and updates label.
         """
-        self.is_clicking = True
-        self.label.config(text="Clicking...")
+        if not self.is_clicking:
+            self.is_clicking = True
+            self.label.config(text="Clicking...")
+            self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
+            self.click_thread.start()
 
     def stop_clicking(self):
         """
@@ -38,3 +44,12 @@ class Window:
         """
         self.is_clicking = False
         self.label.config(text="Stopped")
+
+    def _click_loop(self):
+        """
+        Internal loop that performs mouse clicks while is_clicking is True.
+        Designed for testability and clarity.
+        """
+        while self.is_clicking:
+            pyautogui.click()
+            pyautogui.sleep(0.1)  # Default interval; will be configurable in future features
