@@ -28,6 +28,9 @@ Feature development and completion status are tracked in `FEATURES.md` in the pr
   - Update `README.md` for user-facing documentation.
 - **Testing:**
   - After making changes, run the app to ensure the GUI still behaves as expected.
+  - Add unit tests for new code using pytest.
+  - Check that code coverage is maintained at 90% or higher.
+  - Run pylint on the codebase to ensure style and quality standards are met.
 
 ## Project-Specific Patterns
 - **GUI Pattern:**
