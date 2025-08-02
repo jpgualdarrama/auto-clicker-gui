@@ -1,7 +1,9 @@
-
-from tkinter import Label, Button, Entry
+from tkinter import Label, Button, Entry, Radiobutton, StringVar
 import threading
 import pyautogui
+
+# Intentionally allowing the user to click anywhere on the screen
+pyautogui.FAILSAFE = False
 
 class Window:
     """
@@ -48,12 +50,26 @@ class Window:
         self.y_entry.insert(0, "0")
         self.y_entry.pack()
 
-
         # Button to initiate position picking
         self.pick_position_button = Button(master, text="Pick Position (F8)", command=self.enable_position_pick)
         self.pick_position_button.pack()
 
         self._picking_position = False
+
+        # Run mode selection
+        self.run_mode_var = StringVar(value="indefinite")
+        self.indefinite_radio = Radiobutton(master, text="Run Indefinitely", variable=self.run_mode_var, value="indefinite", command=self._update_run_mode)
+        self.indefinite_radio.pack()
+        self.duration_radio = Radiobutton(master, text="Run for Duration", variable=self.run_mode_var, value="duration", command=self._update_run_mode)
+        self.duration_radio.pack()
+
+        # Duration input
+        self.duration_label = Label(master, text="Duration (seconds):")
+        self.duration_label.pack()
+        self.duration_entry = Entry(master)
+        self.duration_entry.insert(0, "10")
+        self.duration_entry.pack()
+        self.duration_entry.config(state='disabled')
 
     def enable_position_pick(self):
         """
@@ -77,6 +93,16 @@ class Window:
             self.label.config(text=f"Position set to ({x}, {y}) via F8")
             self._picking_position = False
             self.master.unbind('<F8>')
+
+    def _update_run_mode(self):
+        """
+        Enable/disable duration field based on selected run mode.
+        """
+        mode = self.run_mode_var.get()
+        if mode == "duration":
+            self.duration_entry.config(state='normal')
+        else:
+            self.duration_entry.config(state='disabled')
 
     def parse_interval(self, value):
         """
@@ -103,10 +129,33 @@ class Window:
         y = max(0, min(y, screen_height - 1))
         return x, y
 
+    def parse_duration(self, value):
+        """
+        Parse the duration value from string input. Returns a positive integer.
+        Raises ValueError if invalid.
+        """
+        duration = int(value)
+        if duration > 0:
+            return duration
+        raise ValueError("Duration must be a positive integer.")
+
+    def _update_timer(self):
+        """
+        Update countdown timer every second. Stop clicking when time is up.
+        """
+        if self._timer_running and self.is_clicking:
+            self._remaining_time -= 1
+            self.label.config(text=f"Clicking... ({self._remaining_time}s left)")
+            if self._remaining_time <= 0:
+                self.stop_clicking()
+                self.label.config(text="Time is up. Stopped.")
+            else:
+                self.master.after(1000, self._update_timer)
+
     def start_clicking(self):
         """
         Event handler for the Start button. Sets clicking state to True and updates label.
-        Only starts clicking if interval and position are valid.
+        Only starts clicking if interval and position are valid. Uses duration only if selected.
         """
         if not self.is_clicking:
             try:
@@ -119,12 +168,28 @@ class Window:
             except ValueError:
                 self.label.config(text="Invalid position. Please enter valid X and Y coordinates.")
                 return
+            run_mode = self.run_mode_var.get()
+            if run_mode == "duration":
+                try:
+                    duration = self.parse_duration(self.duration_entry.get())
+                except ValueError:
+                    self.label.config(text="Invalid duration. Please enter a positive integer.")
+                    return
+                self._timer_running = True
+                self._remaining_time = duration
+            else:
+                self._timer_running = False
+                self._remaining_time = 0
+
             self.is_clicking = True
             self.label.config(text="Clicking...")
             self.interval = interval
             self.position = position
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
+
+            if run_mode == "duration":
+                self.master.after(1000, self._update_timer)
 
     def stop_clicking(self):
         """
