@@ -1,5 +1,5 @@
 
-from tkinter import Label, Button
+from tkinter import Label, Button, Entry
 import threading
 import pyautogui
 
@@ -28,6 +28,25 @@ class Window:
         self.is_clicking = False
         self.click_thread = None
 
+        # Interval input
+        self.interval_label = Label(master, text="Click Interval (seconds):")
+        self.interval_label.pack()
+        self.interval_entry = Entry(master)
+        self.interval_entry.insert(0, "0.1")
+        self.interval_entry.pack()
+
+    def parse_interval(self, value):
+        """
+        Parse the interval value from string input. Returns a positive float or default 0.1.
+        """
+        try:
+            interval = float(value)
+            if interval > 0:
+                return interval
+        except ValueError:
+            pass
+        return 0.1
+
     def start_clicking(self):
         """
         Event handler for the Start button. Sets clicking state to True and updates label.
@@ -35,6 +54,7 @@ class Window:
         if not self.is_clicking:
             self.is_clicking = True
             self.label.config(text="Clicking...")
+            self.interval = self.parse_interval(self.interval_entry.get())
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
 
@@ -52,4 +72,4 @@ class Window:
         """
         while self.is_clicking:
             pyautogui.click()
-            pyautogui.sleep(0.1)  # Default interval; will be configurable in future features
+            pyautogui.sleep(self.interval)
