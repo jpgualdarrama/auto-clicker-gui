@@ -1,4 +1,4 @@
-from tkinter import Label, Button, Entry, Radiobutton, StringVar
+from tkinter import Label, Button, Entry, Radiobutton, StringVar, ttk
 import threading
 import pyautogui
 import keyboard  # For global hotkeys
@@ -90,6 +90,48 @@ class Window:
         self.register_hotkeys()
         # Ensure cleanup on window close
         self.master.protocol("WM_DELETE_WINDOW", self._on_close)
+
+                # --- Action List Table and Controls ---
+        self.actions = []  # List of dicts: {x, y, interval, type}
+        self.action_table = ttk.Treeview(self.master, columns=("x", "y", "interval", "type"), show="headings", selectmode="browse", height=6)
+        for col in ("x", "y", "interval", "type"):
+            self.action_table.heading(col, text=col.capitalize())
+            self.action_table.column(col, width=80, anchor="center")
+        self.action_table.pack(pady=8)
+
+        # Table controls
+        self.action_controls_frame = ttk.Frame(self.master)
+        self.action_controls_frame.pack()
+
+        self.add_action_btn = Button(self.action_controls_frame, text="Add", command=self._add_action)
+        self.add_action_btn.grid(row=0, column=0, padx=2)
+        self.remove_action_btn = Button(self.action_controls_frame, text="Remove", command=self._remove_action)
+        self.remove_action_btn.grid(row=0, column=1, padx=2)
+        self.move_up_btn = Button(self.action_controls_frame, text="Move Up", command=self._move_action_up)
+        self.move_up_btn.grid(row=0, column=2, padx=2)
+        self.move_down_btn = Button(self.action_controls_frame, text="Move Down", command=self._move_action_down)
+        self.move_down_btn.grid(row=0, column=3, padx=2)
+
+        # Inputs for new action
+        self.new_action_frame = ttk.Frame(self.master)
+        self.new_action_frame.pack(pady=4)
+        self.new_x = Entry(self.new_action_frame, width=6)
+        self.new_x.grid(row=0, column=0)
+        self.new_x.insert(0, str(mouse_x))
+        self.new_y = Entry(self.new_action_frame, width=6)
+        self.new_y.grid(row=0, column=1)
+        self.new_y.insert(0, str(mouse_y))
+        self.new_interval = Entry(self.new_action_frame, width=6)
+        self.new_interval.grid(row=0, column=2)
+        self.new_interval.insert(0, self.interval_entry.get())
+        self.new_type = Entry(self.new_action_frame, width=8)
+        self.new_type.grid(row=0, column=3)
+        self.new_type.insert(0, "click")
+        for i, lbl in enumerate(["X", "Y", "Interval", "Type"]):
+            Label(self.new_action_frame, text=lbl).grid(row=1, column=i)
+
+        # Bind double-click for editing
+        self.action_table.bind("<Double-1>", self._edit_action_cell)
 
     def register_hotkeys(self):
         """
@@ -209,6 +251,286 @@ class Window:
             return executions
         raise ValueError("Executions must be a positive integer.")
 
+
+    def _add_action(self):
+        """Add a new action from input fields to the table and internal list."""
+        try:
+            x = int(self.new_x.get())
+            y = int(self.new_y.get())
+            interval = float(self.new_interval.get())
+            action_type = self.new_type.get().strip() or "click"
+        except Exception:
+            return
+        action = {"x": x, "y": y, "interval": interval, "type": action_type}
+        self.actions.append(action)
+        self._refresh_action_table()
+
+    def _remove_action(self):
+        """Remove the currently selected action from the table and list."""
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if 0 <= idx < len(self.actions):
+                del self.actions[idx]
+                self._refresh_action_table()
+
+    def _add_action(self):
+        """Add a new action from input fields to the table and internal list."""
+        try:
+            x = int(self.new_x.get())
+            y = int(self.new_y.get())
+            interval = float(self.new_interval.get())
+            action_type = self.new_type.get().strip() or "click"
+        except Exception:
+            return
+        action = {"x": x, "y": y, "interval": interval, "type": action_type}
+        self.actions.append(action)
+        self._refresh_action_table()
+
+    def _remove_action(self):
+        """Remove the currently selected action from the table and list."""
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if 0 <= idx < len(self.actions):
+                del self.actions[idx]
+                self._refresh_action_table()
+
+    def _move_action_up(self):
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if idx > 0:
+                self.actions[idx-1], self.actions[idx] = self.actions[idx], self.actions[idx-1]
+                self._refresh_action_table()
+                self.action_table.selection_set(str(idx-1))
+
+    def _move_action_down(self):
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if idx < len(self.actions)-1:
+                self.actions[idx+1], self.actions[idx] = self.actions[idx], self.actions[idx+1]
+                self._refresh_action_table()
+                self.action_table.selection_set(str(idx+1))
+
+    def _edit_action_cell(self, event):
+        """Enable editing of a cell in the table by double-click."""
+        region = self.action_table.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        row_id = self.action_table.identify_row(event.y)
+        col = self.action_table.identify_column(event.x)
+        if not row_id or not col:
+            return
+        idx = int(row_id)
+        col_idx = int(col.replace("#", "")) - 1
+        col_name = ("x", "y", "interval", "type")[col_idx]
+        x0, y0, width, height = self.action_table.bbox(row_id, col)
+        edit_win = Entry(self.action_table, width=8)
+        edit_win.place(x=x0, y=y0, width=width, height=height)
+        edit_win.insert(0, str(self.actions[idx][col_name]))
+        edit_win.focus()
+        def save_edit(event=None):
+            val = edit_win.get()
+            try:
+                if col_name in ("x", "y"):
+                    val = int(val)
+                elif col_name == "interval":
+                    val = float(val)
+            except Exception:
+                edit_win.destroy()
+                return
+            self.actions[idx][col_name] = val
+            edit_win.destroy()
+            self._refresh_action_table()
+        edit_win.bind("<Return>", save_edit)
+        edit_win.bind("<FocusOut>", lambda e: edit_win.destroy())
+
+    def _refresh_action_table(self):
+        """Refresh the table to show current actions."""
+        self.action_table.delete(*self.action_table.get_children())
+        for i, action in enumerate(self.actions):
+            self.action_table.insert("", "end", iid=str(i), values=(action["x"], action["y"], action["interval"], action["type"]))
+
+    def _move_action_up(self):
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if idx > 0:
+                self.actions[idx-1], self.actions[idx] = self.actions[idx], self.actions[idx-1]
+                self._refresh_action_table()
+                self.action_table.selection_set(str(idx-1))
+
+    def _move_action_down(self):
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if idx < len(self.actions)-1:
+                self.actions[idx+1], self.actions[idx] = self.actions[idx], self.actions[idx+1]
+                self._refresh_action_table()
+                self.action_table.selection_set(str(idx+1))
+
+    def _edit_action_cell(self, event):
+        """Enable editing of a cell in the table by double-click."""
+        region = self.action_table.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        row_id = self.action_table.identify_row(event.y)
+        col = self.action_table.identify_column(event.x)
+        if not row_id or not col:
+            return
+        idx = int(row_id)
+        col_idx = int(col.replace("#", "")) - 1
+        col_name = ("x", "y", "interval", "type")[col_idx]
+        x0, y0, width, height = self.action_table.bbox(row_id, col)
+        edit_win = Entry(self.action_table, width=8)
+        edit_win.place(x=x0, y=y0, width=width, height=height)
+        edit_win.insert(0, str(self.actions[idx][col_name]))
+        edit_win.focus()
+        def save_edit(event=None):
+            val = edit_win.get()
+            try:
+                if col_name in ("x", "y"):
+                    val = int(val)
+                elif col_name == "interval":
+                    val = float(val)
+            except Exception:
+                edit_win.destroy()
+                return
+            self.actions[idx][col_name] = val
+            edit_win.destroy()
+            self._refresh_action_table()
+        edit_win.bind("<Return>", save_edit)
+        edit_win.bind("<FocusOut>", lambda e: edit_win.destroy())
+
+    def _refresh_action_table(self):
+        """Refresh the table to show current actions."""
+        self.action_table.delete(*self.action_table.get_children())
+        for i, action in enumerate(self.actions):
+            self.action_table.insert("", "end", iid=str(i), values=(action["x"], action["y"], action["interval"], action["type"]))
+        # --- Action List Table and Controls ---
+        from tkinter import ttk
+        self.actions = []  # List of dicts: {x, y, interval, type}
+        self.action_table = ttk.Treeview(self.master, columns=("x", "y", "interval", "type"), show="headings", selectmode="browse", height=6)
+        for col in ("x", "y", "interval", "type"):
+            self.action_table.heading(col, text=col.capitalize())
+            self.action_table.column(col, width=80, anchor="center")
+        self.action_table.pack(pady=8)
+
+        # Table controls
+        self.action_controls_frame = ttk.Frame(self.master)
+        self.action_controls_frame.pack()
+
+        self.add_action_btn = Button(self.action_controls_frame, text="Add", command=self._add_action)
+        self.add_action_btn.grid(row=0, column=0, padx=2)
+        self.remove_action_btn = Button(self.action_controls_frame, text="Remove", command=self._remove_action)
+        self.remove_action_btn.grid(row=0, column=1, padx=2)
+        self.move_up_btn = Button(self.action_controls_frame, text="Move Up", command=self._move_action_up)
+        self.move_up_btn.grid(row=0, column=2, padx=2)
+        self.move_down_btn = Button(self.action_controls_frame, text="Move Down", command=self._move_action_down)
+        self.move_down_btn.grid(row=0, column=3, padx=2)
+
+        # Inputs for new action
+        self.new_action_frame = ttk.Frame(self.master)
+        self.new_action_frame.pack(pady=4)
+        self.new_x = Entry(self.new_action_frame, width=6)
+        self.new_x.grid(row=0, column=0)
+        self.new_x.insert(0, self.x_entry.get())
+        self.new_y = Entry(self.new_action_frame, width=6)
+        self.new_y.grid(row=0, column=1)
+        self.new_y.insert(0, self.y_entry.get())
+        self.new_interval = Entry(self.new_action_frame, width=6)
+        self.new_interval.grid(row=0, column=2)
+        self.new_interval.insert(0, self.interval_entry.get())
+        self.new_type = Entry(self.new_action_frame, width=8)
+        self.new_type.grid(row=0, column=3)
+        self.new_type.insert(0, "click")
+        for i, lbl in enumerate(["X", "Y", "Interval", "Type"]):
+            Label(self.new_action_frame, text=lbl).grid(row=1, column=i)
+
+        # Bind double-click for editing
+        self.action_table.bind("<Double-1>", self._edit_action_cell)
+
+    def _add_action(self):
+        """Add a new action from input fields to the table and internal list."""
+        try:
+            x = int(self.new_x.get())
+            y = int(self.new_y.get())
+            interval = float(self.new_interval.get())
+            action_type = self.new_type.get().strip() or "click"
+        except Exception:
+            return
+        action = {"x": x, "y": y, "interval": interval, "type": action_type}
+        self.actions.append(action)
+        self._refresh_action_table()
+
+    def _remove_action(self):
+        """Remove the currently selected action from the table and list."""
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if 0 <= idx < len(self.actions):
+                del self.actions[idx]
+                self._refresh_action_table()
+
+    def _move_action_up(self):
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if idx > 0:
+                self.actions[idx-1], self.actions[idx] = self.actions[idx], self.actions[idx-1]
+                self._refresh_action_table()
+                self.action_table.selection_set(str(idx-1))
+
+    def _move_action_down(self):
+        sel = self.action_table.selection()
+        if sel:
+            idx = int(sel[0])
+            if idx < len(self.actions)-1:
+                self.actions[idx+1], self.actions[idx] = self.actions[idx], self.actions[idx+1]
+                self._refresh_action_table()
+                self.action_table.selection_set(str(idx+1))
+
+    def _edit_action_cell(self, event):
+        """Enable editing of a cell in the table by double-click."""
+        region = self.action_table.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        row_id = self.action_table.identify_row(event.y)
+        col = self.action_table.identify_column(event.x)
+        if not row_id or not col:
+            return
+        idx = int(row_id)
+        col_idx = int(col.replace("#", "")) - 1
+        col_name = ("x", "y", "interval", "type")[col_idx]
+        x0, y0, width, height = self.action_table.bbox(row_id, col)
+        edit_win = Entry(self.action_table, width=8)
+        edit_win.place(x=x0, y=y0, width=width, height=height)
+        edit_win.insert(0, str(self.actions[idx][col_name]))
+        edit_win.focus()
+        def save_edit(event=None):
+            val = edit_win.get()
+            try:
+                if col_name in ("x", "y"):
+                    val = int(val)
+                elif col_name == "interval":
+                    val = float(val)
+            except Exception:
+                edit_win.destroy()
+                return
+            self.actions[idx][col_name] = val
+            edit_win.destroy()
+            self._refresh_action_table()
+        edit_win.bind("<Return>", save_edit)
+        edit_win.bind("<FocusOut>", lambda e: edit_win.destroy())
+
+    def _refresh_action_table(self):
+        """Refresh the table to show current actions."""
+        self.action_table.delete(*self.action_table.get_children())
+        for i, action in enumerate(self.actions):
+            self.action_table.insert("", "end", iid=str(i), values=(action["x"], action["y"], action["interval"], action["type"]))
+
     def _update_timer(self):
         """
         Update countdown timer every second. Stop clicking when time is up.
@@ -225,20 +547,35 @@ class Window:
     def start_clicking(self):
         """
         Event handler for the Start button. Sets clicking state to True and updates label.
-        Only starts clicking if interval and position are valid. Uses duration only if selected.
+        Uses the action list if present, otherwise falls back to single position/interval.
         """
         if not self.is_clicking:
-            try:
-                interval = self.parse_interval(self.interval_entry.get())
-            except ValueError:
-                self.label.config(text="Invalid interval. Please enter a positive number.")
-                return
-            try:
-                position = self.parse_position()
-            except ValueError:
-                self.label.config(text="Invalid position. Please enter valid X and Y coordinates.")
-                return
             run_mode = self.run_mode_var.get()
+            actions_to_run = self.actions if self.actions else None
+            if actions_to_run:
+                # Validate all actions
+                for i, act in enumerate(actions_to_run):
+                    try:
+                        x = int(act["x"])
+                        y = int(act["y"])
+                        interval = float(act["interval"])
+                        if interval <= 0:
+                            raise ValueError
+                    except Exception:
+                        self.label.config(text=f"Invalid action at row {i+1}. Check X, Y, Interval.")
+                        return
+            else:
+                try:
+                    interval = self.parse_interval(self.interval_entry.get())
+                except ValueError:
+                    self.label.config(text="Invalid interval. Please enter a positive number.")
+                    return
+                try:
+                    position = self.parse_position()
+                except ValueError:
+                    self.label.config(text="Invalid position. Please enter valid X and Y coordinates.")
+                    return
+
             if run_mode == "duration":
                 try:
                     duration = self.parse_duration(self.duration_entry.get())
@@ -264,9 +601,17 @@ class Window:
 
             self.is_clicking = True
             self.label.config(text="Clicking...")
-            self.interval = interval
-            self.position = position
             self._executions_done = 0
+            # Store clicker config
+            if actions_to_run:
+                self._click_actions = actions_to_run.copy()
+            else:
+                self._click_actions = [{
+                    "x": self.position[0] if hasattr(self, "position") else int(self.x_entry.get()),
+                    "y": self.position[1] if hasattr(self, "position") else int(self.y_entry.get()),
+                    "interval": float(self.interval_entry.get()),
+                    "type": "click"
+                }]
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
 
@@ -282,17 +627,56 @@ class Window:
 
     def _click_loop(self):
         """
-        Internal loop that performs mouse clicks while is_clicking is True.
-        Designed for testability and clarity.
+        Internal loop that performs mouse actions while is_clicking is True.
+        If actions are present, executes them in sequence. Otherwise, uses single position/interval.
         """
+        import time
+        actions = self._click_actions if hasattr(self, "_click_actions") else None
+        run_mode = self.run_mode_var.get()
+        executions_limit = self._execution_limit
+        executions_done = 0
+        duration_mode = (run_mode == "duration")
+        start_time = time.time() if duration_mode else None
         while self.is_clicking:
-            pyautogui.click(*self.position)
-            pyautogui.sleep(self.interval)
-            if self._execution_limit is not None:
-                self._executions_done += 1
-                remaining = self._execution_limit - self._executions_done
-                if remaining > 0:
-                    self.label.config(text=f"Clicking... {remaining} executions left")
-                if self._executions_done >= self._execution_limit:
+            if actions:
+                for idx, act in enumerate(actions):
+                    if not self.is_clicking:
+                        break
+                    x = int(act["x"])
+                    y = int(act["y"])
+                    interval = float(act["interval"])
+                    action_type = act.get("type", "click")
+                    # Only support "click" for now
+                    if action_type == "click":
+                        pyautogui.click(x, y)
+                    # Future: support other types
+                    self.label.config(text=f"Clicking action {idx+1}/{len(actions)} at ({x},{y})")
+                    time.sleep(interval)
+                    executions_done += 1
+                    # Executions mode: stop after enough actions
+                    if executions_limit is not None and executions_done >= executions_limit:
+                        self.stop_clicking()
+                        self.label.config(text=f"Completed {executions_limit} executions.")
+                        return
+                    # Duration mode: stop after time elapsed
+                    if duration_mode and (time.time() - start_time) >= self._remaining_time:
+                        self.stop_clicking()
+                        self.label.config(text="Time is up. Stopped.")
+                        return
+            else:
+                # Fallback: single click
+                pyautogui.click(*self.position)
+                time.sleep(self.interval)
+                executions_done += 1
+                if executions_limit is not None:
+                    remaining = executions_limit - executions_done
+                    if remaining > 0:
+                        self.label.config(text=f"Clicking... {remaining} executions left")
+                    if executions_done >= executions_limit:
+                        self.stop_clicking()
+                        self.label.config(text=f"Completed {executions_limit} executions.")
+                        return
+                if duration_mode and (time.time() - start_time) >= self._remaining_time:
                     self.stop_clicking()
-                    self.label.config(text=f"Completed {self._execution_limit} executions.")
+                    self.label.config(text="Time is up. Stopped.")
+                    return
