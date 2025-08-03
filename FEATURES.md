@@ -10,5 +10,5 @@
 - [x] Optionally run for set number of executions
 - [x] Support list of individual actions
 - [x] Add current mouse position to GUI
-- [ ] Support repeating individual actions
+- [x] Support repeating individual actions
 - [ ] Save/Load list of actions from file

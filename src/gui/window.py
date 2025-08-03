@@ -79,19 +79,20 @@ class Window:
         self.master.protocol("WM_DELETE_WINDOW", self._on_close)
 
         # --- Action List Table and Controls ---
-        self.actions = []  # List of dicts: {x, y, interval, type}
+        self.actions = []  # List of dicts: {x, y, interval, type, repeat}
         default_action = {
             "x": mouse_x,
             "y": mouse_y,
             "interval": 0.1,
-            "type": "click"
+            "type": "click",
+            "repeat": 1
         }
         self.actions.append(default_action)
         # Table title
         self.action_table_label = Label(self.master, text="Action List", font=("Segoe UI", 10, "bold"))
         self.action_table_label.pack(pady=(10,0))
-        self.action_table = ttk.Treeview(self.master, columns=("x", "y", "interval", "type"), show="headings", selectmode="browse", height=6)
-        for col in ("x", "y", "interval", "type"):
+        self.action_table = ttk.Treeview(self.master, columns=("x", "y", "interval", "type", "repeat"), show="headings", selectmode="browse", height=6)
+        for col in ("x", "y", "interval", "type", "repeat"):
             self.action_table.heading(col, text=col.capitalize())
             self.action_table.column(col, width=80, anchor="center")
         self.action_table.pack(pady=8)
@@ -243,7 +244,7 @@ class Window:
 
     def _add_action(self):
         """Add a new blank action to the table and internal list."""
-        action = {"x": 0, "y": 0, "interval": 0.1, "type": "click"}
+        action = {"x": 0, "y": 0, "interval": 0.1, "type": "click", "repeat": 1}
         self.actions.append(action)
         self._refresh_action_table()
 
@@ -267,7 +268,7 @@ class Window:
             return
         idx = int(row_id)
         col_idx = int(col.replace("#", "")) - 1
-        col_name = ("x", "y", "interval", "type")[col_idx]
+        col_name = ("x", "y", "interval", "type", "repeat")[col_idx]
         x0, y0, width, height = self.action_table.bbox(row_id, col)
         edit_win = Entry(self.action_table, width=8)
         edit_win.place(x=x0, y=y0, width=width, height=height)
@@ -280,6 +281,8 @@ class Window:
                     val = int(val)
                 elif col_name == "interval":
                     val = float(val)
+                elif col_name == "repeat":
+                    val = int(val)
             except Exception:
                 edit_win.destroy()
                 return
@@ -293,7 +296,7 @@ class Window:
         """Refresh the table to show current actions."""
         self.action_table.delete(*self.action_table.get_children())
         for i, action in enumerate(self.actions):
-            self.action_table.insert("", "end", iid=str(i), values=(action["x"], action["y"], action["interval"], action["type"]))
+            self.action_table.insert("", "end", iid=str(i), values=(action["x"], action["y"], action["interval"], action["type"], action["repeat"]))
 
     def _move_action_up(self):
         sel = self.action_table.selection()
@@ -418,17 +421,21 @@ class Window:
                     y = int(act["y"])
                     interval = float(act["interval"])
                     action_type = act.get("type", "click")
-                    # Only support "click" for now
-                    if action_type == "click":
-                        pyautogui.click(x, y)
-                    # Future: support other types
-                    self.label.config(text=f"Running action {idx+1}/{len(actions)} at ({x},{y})")
-                    time.sleep(interval)
-                    # Duration mode: stop after time elapsed
-                    if duration_mode and (time.time() - start_time) >= self._remaining_time:
-                        self.stop_clicking()
-                        self.label.config(text="Time is up. Stopped.")
-                        return
+                    repeat = int(act.get("repeat", 1))
+                    for r in range(repeat):
+                        if not self.is_clicking:
+                            break
+                        # Only support "click" for now
+                        if action_type == "click":
+                            pyautogui.click(x, y)
+                        # Future: support other types
+                        self.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
+                        time.sleep(interval)
+                        # Duration mode: stop after time elapsed
+                        if duration_mode and (time.time() - start_time) >= self._remaining_time:
+                            self.stop_clicking()
+                            self.label.config(text="Time is up. Stopped.")
+                            return
                 # One execution of all actions is done
                 executions_done += 1
                 # Executions mode: stop after enough actions
