@@ -26,6 +26,7 @@ Feature development and completion status are tracked in `FEATURES.md` in the pr
 - **Documentation**
   - Add documentation comments in the code using standard formats (e.g., docstrings).
   - Update `README.md` for user-facing documentation.
+  - When requested to write down a TODO, add it to `TODOS.md` for tracking.
 - **Testing:**
 - After making changes, run the app to ensure the GUI still behaves as expected.
 - Add unit tests for new code using pytest.
