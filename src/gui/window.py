@@ -22,6 +22,11 @@ class Window:
         self.label = Label(master, text="Auto Clicker Tool")
         self.label.pack()
 
+        # Mouse position label (live-updating)
+        self.mouse_position_label = Label(master, text="Mouse Position: (0, 0)", font=("Segoe UI", 9))
+        self.mouse_position_label.pack(pady=(2,0))
+        self._update_mouse_position_label()
+
         # Start/Stop buttons side by side
         self.start_stop_frame = ttk.Frame(master)
         self.start_stop_frame.pack(pady=(4,0))
@@ -116,6 +121,17 @@ class Window:
 
         # Show default action in table on load
         self._refresh_action_table()
+
+    def _update_mouse_position_label(self):
+        """
+        Update the mouse position label every 100ms with the current mouse coordinates.
+        """
+        try:
+            x, y = pyautogui.position()
+            self.mouse_position_label.config(text=f"Mouse Position: ({x}, {y})")
+        except Exception:
+            self.mouse_position_label.config(text="Mouse Position: (error)")
+        self.master.after(100, self._update_mouse_position_label)
 
     def _on_table_select(self, event=None):
         """Enable Pick Position button only if a row is selected."""
