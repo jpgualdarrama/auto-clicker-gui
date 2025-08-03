@@ -8,6 +8,7 @@
 - [x] Optionally run for period of time
 - [x] Start/Stop auto-clicker with keypress
 - [x] Optionally run for set number of executions
-- [ ] Support list of individual actions
-- [ ] Save/Load list of actions from file
+- [x] Support list of individual actions
+- [ ] Add current mouse position to GUI
 - [ ] Support repeating individual actions
+- [ ] Save/Load list of actions from file
