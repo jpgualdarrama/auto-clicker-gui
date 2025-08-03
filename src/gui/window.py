@@ -1,6 +1,7 @@
 from tkinter import Label, Button, Entry, Radiobutton, StringVar
 import threading
 import pyautogui
+import keyboard  # For global hotkeys
 
 # Intentionally allowing the user to click anywhere on the screen
 pyautogui.FAILSAFE = False
@@ -21,10 +22,10 @@ class Window:
         self.label = Label(master, text="Auto Clicker Tool")
         self.label.pack()
 
-        self.start_button = Button(master, text="Start", command=self.start_clicking)
+        self.start_button = Button(master, text="Start (F9)", command=self.start_clicking)
         self.start_button.pack()
 
-        self.stop_button = Button(master, text="Stop", command=self.stop_clicking)
+        self.stop_button = Button(master, text="Stop (F10)", command=self.stop_clicking)
         self.stop_button.pack()
 
         self.is_clicking = False
@@ -70,6 +71,46 @@ class Window:
         self.duration_entry.insert(0, "10")
         self.duration_entry.pack()
         self.duration_entry.config(state='disabled')
+
+        # Register global hotkeys for start/stop
+        self.register_hotkeys()
+        # Ensure cleanup on window close
+        self.master.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def register_hotkeys(self):
+        """
+        Register global hotkeys for start/stop actions. Separated for testability.
+        """
+        keyboard.add_hotkey('f9', self._on_start_key)
+        keyboard.add_hotkey('f10', self._on_stop_key)
+
+    def remove_hotkeys(self):
+        """
+        Remove global hotkeys for start/stop actions. Separated for testability.
+        """
+        keyboard.remove_hotkey('f9')
+        keyboard.remove_hotkey('f10')
+
+    def _on_start_key(self, event=None):
+        """
+        Start auto-clicker via F9 keypress.
+        """
+        self.start_clicking()
+        self.label.config(text="Clicking... (Started via F9)")
+
+    def _on_stop_key(self, event=None):
+        """
+        Stop auto-clicker via F10 keypress.
+        """
+        self.stop_clicking()
+        self.label.config(text="Stopped (via F10)")
+
+    def _on_close(self):
+        """
+        Remove global hotkeys and close window.
+        """
+        self.remove_hotkeys()
+        self.master.destroy()
 
     def enable_position_pick(self):
         """

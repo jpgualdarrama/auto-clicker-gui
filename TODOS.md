@@ -1,5 +1,8 @@
 # TODOS
 
+**Note:** Always add new TODOs to this file for tracking.
+
+- [ ] Refactor Window.__init__ to allow dependency injection of widgets for easier testing (e.g., pass widget factories or dummy widgets)
 - [ ] Fix test_start_stop_clicking in tests/test_window.py: Tkinter/TclError due to missing or misconfigured Tk installation. Ensure Tk is properly installed and available in the test environment.
 
 # Hotkey Feature Refactor TODOs
