@@ -96,6 +96,7 @@ class Window:
             self.action_table.heading(col, text=col.capitalize())
             self.action_table.column(col, width=80, anchor="center")
         self.action_table.pack(pady=8)
+        self._refresh_action_table()
 
         # Table controls
         self.action_controls_frame = ttk.Frame(self.master)
@@ -112,6 +113,62 @@ class Window:
         # Pick Position button, initially disabled
         self.pick_position_button = Button(self.action_controls_frame, text="Pick Position (F8)", command=self.enable_position_pick, state="disabled")
         self.pick_position_button.grid(row=0, column=4, padx=2)
+
+        # Table controls
+        self.save_load_frame = ttk.Frame(self.master)
+        self.save_load_frame.pack()
+
+        self.save_actions_btn = Button(self.save_load_frame, text="Save Actions", command=self._save_actions)
+        self.save_actions_btn.grid(row=0, column=0, padx=2)
+        self.load_actions_btn = Button(self.save_load_frame, text="Load Actions", command=self._load_actions)
+        self.load_actions_btn.grid(row=0, column=1, padx=2)
+
+    def _save_actions(self):
+        """Save the current actions to a CSV file."""
+        import csv
+        from tkinter import filedialog
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if not file_path:
+            return
+        try:
+            with open(file_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["x", "y", "interval", "type", "repeat"])
+                writer.writeheader()
+                for action in self.actions:
+                    writer.writerow(action)
+            self.label.config(text=f"Actions saved to {file_path}")
+        except Exception as e:
+            self.label.config(text=f"Error saving actions: {e}")
+
+    def _load_actions(self):
+        """Load actions from a CSV file, replacing the current list. Validates contents."""
+        import csv
+        from tkinter import filedialog
+        file_path = filedialog.askopenfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if not file_path:
+            return
+        try:
+            with open(file_path, "r", newline="") as f:
+                reader = csv.DictReader(f)
+                actions = []
+                for i, row in enumerate(reader):
+                    try:
+                        x = int(row["x"])
+                        y = int(row["y"])
+                        interval = float(row["interval"])
+                        action_type = row["type"]
+                        repeat = int(row["repeat"])
+                        if interval <= 0 or repeat < 1:
+                            raise ValueError
+                        actions.append({"x": x, "y": y, "interval": interval, "type": action_type, "repeat": repeat})
+                    except Exception:
+                        self.label.config(text=f"Invalid action in row {i+1}. File not loaded.")
+                        return
+                self.actions = actions
+                self._refresh_action_table()
+                self.label.config(text=f"Actions loaded from {file_path}")
+        except Exception as e:
+            self.label.config(text=f"Error loading actions: {e}")
 
         # Removed new action input boxes; users add/edit actions directly in the table
 

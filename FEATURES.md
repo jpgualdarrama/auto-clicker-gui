@@ -11,4 +11,4 @@
 - [x] Support list of individual actions
 - [x] Add current mouse position to GUI
 - [x] Support repeating individual actions
-- [ ] Save/Load list of actions from file
+- [x] Save/Load list of actions from file
