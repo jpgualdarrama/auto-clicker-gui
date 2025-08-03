@@ -22,11 +22,13 @@ class Window:
         self.label = Label(master, text="Auto Clicker Tool")
         self.label.pack()
 
-        self.start_button = Button(master, text="Start (F9)", command=self.start_clicking)
-        self.start_button.pack()
-
-        self.stop_button = Button(master, text="Stop (F10)", command=self.stop_clicking)
-        self.stop_button.pack()
+        # Start/Stop buttons side by side
+        self.start_stop_frame = ttk.Frame(master)
+        self.start_stop_frame.pack(pady=(4,0))
+        self.start_button = Button(self.start_stop_frame, text="Start (F9)", command=self.start_clicking)
+        self.start_button.grid(row=0, column=0, padx=2)
+        self.stop_button = Button(self.start_stop_frame, text="Stop (F10)", command=self.stop_clicking)
+        self.stop_button.grid(row=0, column=1, padx=2)
 
         self.is_clicking = False
         self.click_thread = None
@@ -37,29 +39,31 @@ class Window:
 
         self._picking_position = False
 
-        # Run mode selection
+        # Run mode selection (radio buttons in a row)
         self.run_mode_var = StringVar(value="indefinite")
-        self.indefinite_radio = Radiobutton(master, text="Run Indefinitely", variable=self.run_mode_var, value="indefinite", command=self._update_run_mode)
-        self.indefinite_radio.pack()
-        self.duration_radio = Radiobutton(master, text="Run for Duration", variable=self.run_mode_var, value="duration", command=self._update_run_mode)
-        self.duration_radio.pack()
-        self.executions_radio = Radiobutton(master, text="Run for Number of Executions", variable=self.run_mode_var, value="executions", command=self._update_run_mode)
-        self.executions_radio.pack()
+        self.run_mode_frame = ttk.Frame(master)
+        self.run_mode_frame.pack(pady=(8,0))
+        self.indefinite_radio = Radiobutton(self.run_mode_frame, text="Run Indefinitely", variable=self.run_mode_var, value="indefinite", command=self._update_run_mode)
+        self.indefinite_radio.grid(row=0, column=0, padx=4)
+        self.duration_radio = Radiobutton(self.run_mode_frame, text="Run for Duration", variable=self.run_mode_var, value="duration", command=self._update_run_mode)
+        self.duration_radio.grid(row=0, column=1, padx=4)
+        self.executions_radio = Radiobutton(self.run_mode_frame, text="Run for Number of Executions", variable=self.run_mode_var, value="executions", command=self._update_run_mode)
+        self.executions_radio.grid(row=0, column=2, padx=4)
 
-        # Duration input
-        self.duration_label = Label(master, text="Duration (seconds):")
-        self.duration_label.pack()
-        self.duration_entry = Entry(master)
+        # Duration input under duration radio
+        self.duration_label = Label(self.run_mode_frame, text="Duration (seconds):")
+        self.duration_label.grid(row=1, column=1, pady=(2,0))
+        self.duration_entry = Entry(self.run_mode_frame)
         self.duration_entry.insert(0, "10")
-        self.duration_entry.pack()
+        self.duration_entry.grid(row=2, column=1)
         self.duration_entry.config(state='disabled')
 
-        # Executions input
-        self.executions_label = Label(master, text="Number of Executions:")
-        self.executions_label.pack()
-        self.executions_entry = Entry(master)
+        # Executions input under executions radio
+        self.executions_label = Label(self.run_mode_frame, text="Number of Executions:")
+        self.executions_label.grid(row=1, column=2, pady=(2,0))
+        self.executions_entry = Entry(self.run_mode_frame)
         self.executions_entry.insert(0, "100")
-        self.executions_entry.pack()
+        self.executions_entry.grid(row=2, column=2)
         self.executions_entry.config(state='disabled')
 
         self._execution_limit = None
@@ -78,6 +82,9 @@ class Window:
             "type": "click"
         }
         self.actions.append(default_action)
+        # Table title
+        self.action_table_label = Label(self.master, text="Action List", font=("Segoe UI", 10, "bold"))
+        self.action_table_label.pack(pady=(10,0))
         self.action_table = ttk.Treeview(self.master, columns=("x", "y", "interval", "type"), show="headings", selectmode="browse", height=6)
         for col in ("x", "y", "interval", "type"):
             self.action_table.heading(col, text=col.capitalize())
@@ -399,7 +406,7 @@ class Window:
                     if action_type == "click":
                         pyautogui.click(x, y)
                     # Future: support other types
-                    self.label.config(text=f"Clicking action {idx+1}/{len(actions)} at ({x},{y})")
+                    self.label.config(text=f"Running action {idx+1}/{len(actions)} at ({x},{y})")
                     time.sleep(interval)
                     # Duration mode: stop after time elapsed
                     if duration_mode and (time.time() - start_time) >= self._remaining_time:
