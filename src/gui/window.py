@@ -63,6 +63,8 @@ class Window:
         self.indefinite_radio.pack()
         self.duration_radio = Radiobutton(master, text="Run for Duration", variable=self.run_mode_var, value="duration", command=self._update_run_mode)
         self.duration_radio.pack()
+        self.executions_radio = Radiobutton(master, text="Run for Number of Executions", variable=self.run_mode_var, value="executions", command=self._update_run_mode)
+        self.executions_radio.pack()
 
         # Duration input
         self.duration_label = Label(master, text="Duration (seconds):")
@@ -71,6 +73,16 @@ class Window:
         self.duration_entry.insert(0, "10")
         self.duration_entry.pack()
         self.duration_entry.config(state='disabled')
+
+        # Executions input
+        self.executions_label = Label(master, text="Number of Executions:")
+        self.executions_label.pack()
+        self.executions_entry = Entry(master)
+        self.executions_entry.insert(0, "100")
+        self.executions_entry.pack()
+        self.executions_entry.config(state='disabled')
+
+        self._execution_limit = None
 
         # Register global hotkeys for start/stop
         self.register_hotkeys()
@@ -142,8 +154,13 @@ class Window:
         mode = self.run_mode_var.get()
         if mode == "duration":
             self.duration_entry.config(state='normal')
+            self.executions_entry.config(state='disabled')
+        elif mode == "executions":
+            self.duration_entry.config(state='disabled')
+            self.executions_entry.config(state='normal')
         else:
             self.duration_entry.config(state='disabled')
+            self.executions_entry.config(state='disabled')
 
     def parse_interval(self, value):
         """
@@ -179,6 +196,16 @@ class Window:
         if duration > 0:
             return duration
         raise ValueError("Duration must be a positive integer.")
+
+    def parse_executions(self, value):
+        """
+        Parse the executions value from string input. Returns a positive integer.
+        Raises ValueError if invalid.
+        """
+        executions = int(value)
+        if executions > 0:
+            return executions
+        raise ValueError("Executions must be a positive integer.")
 
     def _update_timer(self):
         """
@@ -218,14 +245,26 @@ class Window:
                     return
                 self._timer_running = True
                 self._remaining_time = duration
+                self._execution_limit = None
+            elif run_mode == "executions":
+                try:
+                    executions = self.parse_executions(self.executions_entry.get())
+                except ValueError:
+                    self.label.config(text="Invalid executions. Please enter a positive integer.")
+                    return
+                self._timer_running = False
+                self._remaining_time = 0
+                self._execution_limit = executions
             else:
                 self._timer_running = False
                 self._remaining_time = 0
+                self._execution_limit = None
 
             self.is_clicking = True
             self.label.config(text="Clicking...")
             self.interval = interval
             self.position = position
+            self._executions_done = 0
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
 
@@ -247,3 +286,11 @@ class Window:
         while self.is_clicking:
             pyautogui.click(*self.position)
             pyautogui.sleep(self.interval)
+            if self._execution_limit is not None:
+                self._executions_done += 1
+                remaining = self._execution_limit - self._executions_done
+                if remaining > 0:
+                    self.label.config(text=f"Clicking... {remaining} executions left")
+                if self._executions_done >= self._execution_limit:
+                    self.stop_clicking()
+                    self.label.config(text=f"Completed {self._execution_limit} executions.")

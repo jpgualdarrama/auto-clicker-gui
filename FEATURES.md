@@ -6,8 +6,8 @@
 - [x] Select click position with inputs in the GUI
 - [x] Select click position by moving mouse to point on screen and pressing a hotkey
 - [x] Optionally run for period of time
-- [ ] Start/Stop auto-clicker with keypress
+- [x] Start/Stop auto-clicker with keypress
+- [x] Optionally run for set number of executions
 - [ ] Support list of individual actions
 - [ ] Save/Load list of actions from file
 - [ ] Support repeating individual actions
-- [ ] Run for set number of executions
