@@ -2,8 +2,8 @@ import threading
 import pyautogui
 import keyboard
 import time
-import csv
 from tkinter import filedialog, Entry
+from .action_list import ActionList
 
 class WindowLogic:
     """
@@ -19,7 +19,6 @@ class WindowLogic:
         self._timer_running = False
         self._remaining_time = 0
         self._executions_done = 0
-        self.actions = []
         default_action = {
             "x": gui.default_mouse_x,
             "y": gui.default_mouse_y,
@@ -27,7 +26,7 @@ class WindowLogic:
             "type": "click",
             "repeat": 1
         }
-        self.actions.append(default_action)
+        self.action_list = ActionList(default_action)
         self._refresh_action_table()
         # Wire up widget commands
         gui.start_button.config(command=self.start_clicking)
@@ -58,39 +57,35 @@ class WindowLogic:
 
     def _refresh_action_table(self):
         self.gui.action_table.delete(*self.gui.action_table.get_children())
-        for i, action in enumerate(self.actions):
+        for i, action in enumerate(self.action_list.get_actions()):
             self.gui.action_table.insert("", "end", iid=str(i), values=(action["x"], action["y"], action["interval"], action["type"], action["repeat"]))
 
     def _add_action(self):
-        action = {"x": 0, "y": 0, "interval": 0.1, "type": "click", "repeat": 1}
-        self.actions.append(action)
+        self.action_list.add_action()
         self._refresh_action_table()
 
     def _remove_action(self):
         sel = self.gui.action_table.selection()
         if sel:
             idx = int(sel[0])
-            if 0 <= idx < len(self.actions):
-                del self.actions[idx]
-                self._refresh_action_table()
+            self.action_list.remove_action(idx)
+            self._refresh_action_table()
 
     def _move_action_up(self):
         sel = self.gui.action_table.selection()
         if sel:
             idx = int(sel[0])
-            if idx > 0:
-                self.actions[idx-1], self.actions[idx] = self.actions[idx], self.actions[idx-1]
-                self._refresh_action_table()
-                self.gui.action_table.selection_set(str(idx-1))
+            self.action_list.move_action_up(idx)
+            self._refresh_action_table()
+            self.gui.action_table.selection_set(str(idx-1))
 
     def _move_action_down(self):
         sel = self.gui.action_table.selection()
         if sel:
             idx = int(sel[0])
-            if idx < len(self.actions)-1:
-                self.actions[idx+1], self.actions[idx] = self.actions[idx], self.actions[idx+1]
-                self._refresh_action_table()
-                self.gui.action_table.selection_set(str(idx+1))
+            self.action_list.move_action_down(idx)
+            self._refresh_action_table()
+            self.gui.action_table.selection_set(str(idx+1))
 
     def _on_table_select(self, event=None):
         sel = self.gui.action_table.selection()
@@ -113,7 +108,7 @@ class WindowLogic:
         x0, y0, width, height = self.gui.action_table.bbox(row_id, col)
         edit_win = Entry(self.gui.action_table, width=8)
         edit_win.place(x=x0, y=y0, width=width, height=height)
-        edit_win.insert(0, str(self.actions[idx][col_name]))
+        edit_win.insert(0, str(self.action_list.get_actions()[idx][col_name]))
         edit_win.focus()
         def save_edit(event=None):
             val = edit_win.get()
@@ -127,7 +122,7 @@ class WindowLogic:
             except Exception:
                 edit_win.destroy()
                 return
-            self.actions[idx][col_name] = val
+            self.action_list.edit_action(idx, col_name, val)
             edit_win.destroy()
             self._refresh_action_table()
         edit_win.bind("<Return>", save_edit)
@@ -137,42 +132,22 @@ class WindowLogic:
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
         if not file_path:
             return
-        try:
-            with open(file_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=["x", "y", "interval", "type", "repeat"])
-                writer.writeheader()
-                for action in self.actions:
-                    writer.writerow(action)
+        error = self.action_list.save_to_csv(file_path)
+        if error:
+            self.gui.label.config(text=f"Error saving actions: {error}")
+        else:
             self.gui.label.config(text=f"Actions saved to {file_path}")
-        except Exception as e:
-            self.gui.label.config(text=f"Error saving actions: {e}")
 
     def _load_actions(self):
         file_path = filedialog.askopenfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
         if not file_path:
             return
-        try:
-            with open(file_path, "r", newline="") as f:
-                reader = csv.DictReader(f)
-                actions = []
-                for i, row in enumerate(reader):
-                    try:
-                        x = int(row["x"])
-                        y = int(row["y"])
-                        interval = float(row["interval"])
-                        action_type = row["type"]
-                        repeat = int(row["repeat"])
-                        if interval <= 0 or repeat < 1:
-                            raise ValueError
-                        actions.append({"x": x, "y": y, "interval": interval, "type": action_type, "repeat": repeat})
-                    except Exception:
-                        self.gui.label.config(text=f"Invalid action in row {i+1}. File not loaded.")
-                        return
-                self.actions = actions
-                self._refresh_action_table()
-                self.gui.label.config(text=f"Actions loaded from {file_path}")
-        except Exception as e:
-            self.gui.label.config(text=f"Error loading actions: {e}")
+        actions, error = self.action_list.load_from_csv(file_path)
+        if error:
+            self.gui.label.config(text=f"Error loading actions: {error}")
+            return
+        self._refresh_action_table()
+        self.gui.label.config(text=f"Actions loaded from {file_path}")
 
     def _update_run_mode(self):
         mode = self.gui.run_mode_var.get()
@@ -218,11 +193,10 @@ class WindowLogic:
             sel = self.gui.action_table.selection()
             if sel:
                 idx = int(sel[0])
-                if 0 <= idx < len(self.actions):
-                    self.actions[idx]["x"] = x
-                    self.actions[idx]["y"] = y
-                    self._refresh_action_table()
-                    self.gui.action_table.selection_set(str(idx))
+                self.action_list.edit_action(idx, "x", x)
+                self.action_list.edit_action(idx, "y", y)
+                self._refresh_action_table()
+                self.gui.action_table.selection_set(str(idx))
             self._picking_position = False
             self.gui.master.unbind('<F8>')
             self.gui.label.config(text="Auto Clicker Tool")
@@ -252,7 +226,7 @@ class WindowLogic:
     def start_clicking(self):
         if not self.is_clicking:
             run_mode = self.gui.run_mode_var.get()
-            actions_to_run = self.actions if self.actions else None
+            actions_to_run = self.action_list.get_actions() if self.action_list.get_actions() else None
             if actions_to_run:
                 for i, act in enumerate(actions_to_run):
                     try:
@@ -290,7 +264,7 @@ class WindowLogic:
             self.gui.label.config(text="Clicking...")
             self._executions_done = 0
             if actions_to_run:
-                self._click_actions = actions_to_run.copy()
+                self._click_actions = [dict(act) for act in actions_to_run]
             else:
                 self._click_actions = [{
                     "x": self.gui.default_mouse_x,
