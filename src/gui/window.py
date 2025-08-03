@@ -42,13 +42,15 @@ class Window:
         self.x_label = Label(master, text="X Position:")
         self.x_label.pack()
         self.x_entry = Entry(master)
-        self.x_entry.insert(0, "0")
-        self.x_entry.pack()
-
         self.y_label = Label(master, text="Y Position:")
         self.y_label.pack()
         self.y_entry = Entry(master)
-        self.y_entry.insert(0, "0")
+
+        # Set defaults to current mouse position
+        mouse_x, mouse_y = pyautogui.position()
+        self.x_entry.insert(0, str(mouse_x))
+        self.x_entry.pack()
+        self.y_entry.insert(0, str(mouse_y))
         self.y_entry.pack()
 
         # Button to initiate position picking
