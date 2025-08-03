@@ -12,7 +12,7 @@ class WindowLogic:
     """
     def __init__(self, gui):
         self.gui = gui
-        self.is_clicking = False
+        self.is_clicking_event = threading.Event()
         self.click_thread = None
         self._picking_position = False
         self._execution_limit = None
@@ -214,7 +214,7 @@ class WindowLogic:
         raise ValueError("Executions must be a positive integer.")
 
     def _update_timer(self):
-        if self._timer_running and self.is_clicking:
+        if self._timer_running and self.is_clicking_event.is_set():
             self._remaining_time -= 1
             self.gui.label.config(text=f"Clicking... ({self._remaining_time}s left)")
             if self._remaining_time <= 0:
@@ -224,7 +224,8 @@ class WindowLogic:
                 self.gui.master.after(1000, self._update_timer)
 
     def start_clicking(self):
-        if not self.is_clicking:
+        if not self.is_clicking_event.is_set():
+            self.is_clicking_event.set()
             run_mode = self.gui.run_mode_var.get()
             actions_to_run = self.action_list.get_actions() if self.action_list.get_actions() else None
             if actions_to_run:
@@ -278,7 +279,7 @@ class WindowLogic:
                 self.gui.master.after(1000, self._update_timer)
 
     def stop_clicking(self):
-        self.is_clicking = False
+        self.is_clicking_event.clear()
         self.gui.label.config(text="Stopped")
 
     def _click_loop(self):
@@ -288,10 +289,10 @@ class WindowLogic:
         executions_done = 0
         duration_mode = (run_mode == "duration")
         start_time = time.time() if duration_mode else None
-        while self.is_clicking:
+        while self.is_clicking_event.is_set():
             if actions:
                 for idx, act in enumerate(actions):
-                    if not self.is_clicking:
+                    if not self.is_clicking_event.is_set():
                         break
                     x = int(act["x"])
                     y = int(act["y"])
@@ -299,16 +300,20 @@ class WindowLogic:
                     action_type = act.get("type", "click")
                     repeat = int(act.get("repeat", 1))
                     for r in range(repeat):
-                        if not self.is_clicking:
+                        if not self.is_clicking_event.is_set():
                             break
                         if action_type == "click":
                             pyautogui.click(x, y)
+                        # Wait for interval, but break early if is_clicking_event is cleared
+                        if not self.is_clicking_event.wait(interval):
+                            break
                         self.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
-                        time.sleep(interval)
                         if duration_mode and (time.time() - start_time) >= self._remaining_time:
                             self.stop_clicking()
                             self.gui.label.config(text="Time is up. Stopped.")
                             return
+                    if not self.is_clicking_event.is_set():
+                        break
                 executions_done += 1
                 if executions_limit is not None and executions_done >= executions_limit:
                     self.stop_clicking()
