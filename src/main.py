@@ -1,6 +1,7 @@
 
 import tkinter as tk
-from gui.window import Window
+from gui.window_gui import WindowGUI
+from gui.window_logic import WindowLogic
 
 def main():
     """
@@ -8,7 +9,8 @@ def main():
     Initializes Tkinter root and launches the main window.
     """
     root = tk.Tk()
-    app = Window(root)
+    gui = WindowGUI(root)
+    logic = WindowLogic(gui)
     root.mainloop()
 
 if __name__ == "__main__":
