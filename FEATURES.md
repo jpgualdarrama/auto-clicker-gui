@@ -12,4 +12,4 @@
 - [x] Add current mouse position to GUI
 - [x] Support repeating individual actions
 - [x] Save/Load list of actions from file
-- [ ] Preview clicks with bubbles on screen
+- [x] Preview clicks with bubbles on screen

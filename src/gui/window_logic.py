@@ -46,6 +46,12 @@ class WindowLogic:
         gui.master.protocol("WM_DELETE_WINDOW", self._on_close)
         self.register_hotkeys()
         self._update_mouse_position_label()
+        # Register preview hotkey
+        keyboard.add_hotkey('f7', self.toggle_preview)
+
+    def toggle_preview(self):
+        self.gui.toggle_preview()
+
 
     def _update_mouse_position_label(self):
         try:
@@ -239,6 +245,9 @@ class WindowLogic:
                     except Exception:
                         self.gui.label.config(text=f"Invalid action at row {i+1}. Check X, Y, Interval.")
                         return
+            # Show bubbles if preview is enabled
+            if getattr(self.gui, 'preview_enabled', False):
+                self.gui.show_preview_bubbles()
             if run_mode == "duration":
                 try:
                     duration = self.parse_duration(self.gui.duration_entry.get())

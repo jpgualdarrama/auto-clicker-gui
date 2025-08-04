@@ -1,4 +1,4 @@
-from tkinter import Label, Button, Entry, Radiobutton, StringVar, ttk
+from tkinter import Label, Button, Entry, Radiobutton, StringVar, ttk, Toplevel, Canvas
 import pyautogui
 
 class WindowGUI:
@@ -81,3 +81,73 @@ class WindowGUI:
         # Expose mouse_x, mouse_y for default action
         self.default_mouse_x = mouse_x
         self.default_mouse_y = mouse_y
+        # Preview bubbles state and button
+        self.preview_enabled = False
+        self.preview_bubbles = []
+        self.preview_button = Button(master, text="Enable Preview (F7)", command=self.toggle_preview)
+        self.preview_button.pack(pady=(8,0))
+
+    def toggle_preview(self):
+        self.preview_enabled = not self.preview_enabled
+        self.preview_button.config(text=("Disable Preview (F7)" if self.preview_enabled else "Enable Preview (F7)"))
+        if self.preview_enabled:
+            self.show_preview_bubbles()
+        else:
+            self.hide_preview_bubbles()
+
+    def show_preview_bubbles(self, positions=None):
+        """
+        Show semi-transparent bubbles at given positions. If positions is None, use all actions in table.
+        """
+        self.hide_preview_bubbles()
+        if positions is None and hasattr(self, 'action_table'):
+            positions = []
+            for item in self.action_table.get_children():
+                vals = self.action_table.item(item, 'values')
+                if len(vals) >= 2:
+                    try:
+                        x, y = int(vals[0]), int(vals[1])
+                        positions.append((x, y))
+                    except Exception:
+                        continue
+        for x, y in positions:
+            bubble = self._create_bubble(x, y)
+            self.preview_bubbles.append(bubble)
+
+    def hide_preview_bubbles(self):
+        for bubble in self.preview_bubbles:
+            try:
+                bubble.destroy()
+            except Exception:
+                pass
+        self.preview_bubbles = []
+
+    def _create_bubble(self, x, y, size=40, alpha=0.4):
+        """
+        Create a semi-transparent Toplevel window as a bubble overlay at (x, y).
+        """
+        bubble = Toplevel(self.master)
+        bubble.overrideredirect(True)
+        bubble.attributes('-topmost', True)
+        bubble.attributes('-alpha', alpha)
+        bubble.wm_attributes('-transparentcolor','#000000')
+        bubble.geometry(f"{size}x{size}+{x-size//2}+{y-size//2}")
+        # Draw a circle using Canvas
+        canvas = Canvas(bubble, width=size, height=size, highlightthickness=0, bg='#000000')
+        canvas.pack()
+        # Draw filled circle (bubble) with border
+        circle_color = '#00aaff'  # Light blue, can be changed
+        border_color = '#005577'  # Darker blue for border
+        border_width = 2
+        canvas.create_oval(border_width, border_width, size-border_width, size-border_width,
+                          fill=circle_color, outline=border_color, width=border_width)
+        # Draw crosshairs
+        crosshair_color = '#ffffff'  # White crosshairs
+        crosshair_width = 2
+        center = size // 2
+        offset = size // 4
+        # Vertical line
+        canvas.create_line(center, border_width, center, size-border_width, fill=crosshair_color, width=crosshair_width)
+        # Horizontal line
+        canvas.create_line(border_width, center, size-border_width, center, fill=crosshair_color, width=crosshair_width)
+        return bubble
