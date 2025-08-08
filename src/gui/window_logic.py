@@ -181,7 +181,6 @@ class WindowLogic:
 
     def _on_stop_key(self, event=None):
         self.stop_clicking()
-        self.gui.label.config(text="Stopped (via F10)")
 
     def _on_close(self):
         self.remove_hotkeys()
@@ -230,6 +229,7 @@ class WindowLogic:
                 self.gui.master.after(1000, self._update_timer)
 
     def start_clicking(self):
+        print("Clicking started.")
         if not self.is_clicking_event.is_set():
             self.is_clicking_event.set()
             run_mode = self.gui.run_mode_var.get()
@@ -270,7 +270,6 @@ class WindowLogic:
                 self._timer_running = False
                 self._remaining_time = 0
                 self._execution_limit = None
-            self.is_clicking = True
             self.gui.label.config(text="Clicking...")
             self._executions_done = 0
             if actions_to_run:
@@ -288,6 +287,7 @@ class WindowLogic:
                 self.gui.master.after(1000, self._update_timer)
 
     def stop_clicking(self):
+        print("Clicking stopped.")
         self.is_clicking_event.clear()
         self.gui.label.config(text="Stopped")
 
@@ -328,3 +328,5 @@ class WindowLogic:
                     self.stop_clicking()
                     self.gui.label.config(text=f"Completed {executions_limit} executions.")
                     return
+        while not self.is_clicking_event.is_set():
+            self.is_clicking_event.wait(0.1)
