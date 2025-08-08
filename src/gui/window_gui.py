@@ -68,7 +68,7 @@ class WindowGUI:
         self.move_up_btn.grid(row=0, column=2, padx=2)
         self.move_down_btn = Button(self.action_controls_frame, text="Move Down")
         self.move_down_btn.grid(row=0, column=3, padx=2)
-        self.pick_position_button = Button(self.action_controls_frame, text="Pick Position (F8)", state="disabled")
+        self.pick_position_button = Button(self.action_controls_frame, text="Pick Position (F7)", state="disabled")
         self.pick_position_button.grid(row=0, column=4, padx=2)
 
         self.save_load_frame = ttk.Frame(master)
@@ -84,12 +84,12 @@ class WindowGUI:
         # Preview bubbles state and button
         self.preview_enabled = False
         self.preview_bubbles = []
-        self.preview_button = Button(master, text="Enable Preview (F7)", command=self.toggle_preview)
+        self.preview_button = Button(master, text="Enable Preview (F8)", command=self.toggle_preview)
         self.preview_button.pack(pady=(8,0))
 
     def toggle_preview(self):
         self.preview_enabled = not self.preview_enabled
-        self.preview_button.config(text=("Disable Preview (F7)" if self.preview_enabled else "Enable Preview (F7)"))
+        self.preview_button.config(text=("Disable Preview (F8)" if self.preview_enabled else "Enable Preview (F8)"))
         if self.preview_enabled:
             self.show_preview_bubbles()
         else:

@@ -46,12 +46,9 @@ class WindowLogic:
         gui.master.protocol("WM_DELETE_WINDOW", self._on_close)
         self.register_hotkeys()
         self._update_mouse_position_label()
-        # Register preview hotkey
-        keyboard.add_hotkey('f7', self.toggle_preview)
 
     def toggle_preview(self):
         self.gui.toggle_preview()
-
 
     def _update_mouse_position_label(self):
         try:
@@ -168,10 +165,14 @@ class WindowLogic:
             self.gui.executions_entry.config(state='disabled')
 
     def register_hotkeys(self):
-        keyboard.add_hotkey('f9', self._on_start_key)
+        keyboard.add_hotkey('f7',  self.enable_position_pick)
+        keyboard.add_hotkey('f8',  self.toggle_preview)
+        keyboard.add_hotkey('f9',  self._on_start_key)
         keyboard.add_hotkey('f10', self._on_stop_key)
 
     def remove_hotkeys(self):
+        keyboard.remove_hotkey('f7')
+        keyboard.remove_hotkey('f8')
         keyboard.remove_hotkey('f9')
         keyboard.remove_hotkey('f10')
 
@@ -189,8 +190,8 @@ class WindowLogic:
     def enable_position_pick(self):
         if not self._picking_position:
             self._picking_position = True
-            self.gui.label.config(text="Move mouse to desired position and press F8 (updates selected action)")
-            self.gui.master.bind('<F8>', self.set_position_from_mouse)
+            self.gui.label.config(text="Move mouse to desired position and press F6 to select")
+            keyboard.add_hotkey('f6', self.set_position_from_mouse)
 
     def set_position_from_mouse(self, event=None):
         if self._picking_position:
@@ -203,7 +204,7 @@ class WindowLogic:
                 self._refresh_action_table()
                 self.gui.action_table.selection_set(str(idx))
             self._picking_position = False
-            self.gui.master.unbind('<F8>')
+            keyboard.remove_hotkey('f6')
             self.gui.label.config(text="Auto Clicker Tool")
 
     def parse_duration(self, value):
