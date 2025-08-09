@@ -13,6 +13,7 @@ class WindowLogic:
     def __init__(self, gui):
         self.gui = gui
         self.is_clicking_event = threading.Event()
+        self.is_waiting_event = threading.Event()
         self.click_thread = None
         self._picking_position = False
         self._execution_limit = None
@@ -315,7 +316,7 @@ class WindowLogic:
                         if action_type == "click":
                             pyautogui.click(x, y)
                         # Wait for interval, but break early if is_clicking_event is cleared
-                        if not self.is_clicking_event.wait(interval):
+                        if not self.is_waiting_event.wait(interval):
                             break
                         self.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
                         if duration_mode and (time.time() - start_time) >= self._remaining_time:
@@ -330,4 +331,4 @@ class WindowLogic:
                     self.gui.label.config(text=f"Completed {executions_limit} executions.")
                     return
         while not self.is_clicking_event.is_set():
-            self.is_clicking_event.wait(0.1)
+            self.is_waiting_event.wait(0.1)
