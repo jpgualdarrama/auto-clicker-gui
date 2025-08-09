@@ -315,8 +315,8 @@ class WindowLogic:
                             break
                         if action_type == "click":
                             pyautogui.click(x, y)
-                        # Wait for interval, but break early if is_clicking_event is cleared
-                        if not self.is_waiting_event.wait(interval):
+                        # Wait for interval, but break early if is_waiting_event is cleared
+                        if self.is_waiting_event.wait(interval):
                             break
                         self.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
                         if duration_mode and (time.time() - start_time) >= self._remaining_time:
