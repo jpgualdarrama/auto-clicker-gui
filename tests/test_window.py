@@ -9,13 +9,14 @@ import sys
 import tkinter as tk
 
 sys.path.insert(0, 'src')
-from gui.window import Window
+from gui.window_gui import WindowGUI
+from gui.window_logic import WindowLogic
 
 
 def test_start_stop_clicking(monkeypatch):
     master = tk.Tk()
     master.withdraw()  # Hide the window during tests
-    win = Window(master)
+    win = WindowGUI(master)
     # Patch pyautogui.click and pyautogui.sleep
     monkeypatch.setattr('pyautogui.click', lambda: None)
     monkeypatch.setattr('pyautogui.sleep', lambda x: time.sleep(0.01))

@@ -6,7 +6,10 @@ Covers:
 """
 import pytest
 from unittest.mock import MagicMock, patch
-from src.gui.window import Window
+import sys
+sys.path.insert(0, 'src')
+from gui.window_gui import WindowGUI
+from gui.window_logic import WindowLogic
 
 class DummyMaster:
     def __init__(self):
@@ -20,7 +23,7 @@ class DummyMaster:
 @pytest.fixture
 def window():
     master = DummyMaster()
-    win = Window(master)
+    win = WindowGUI(master)
     # Patch label to avoid Tkinter dependency
     win.label = MagicMock()
     return win

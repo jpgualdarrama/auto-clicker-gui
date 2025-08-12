@@ -8,7 +8,10 @@ Covers:
 """
 import pytest
 from tkinter import Tk
-from src.gui.window import Window
+import sys
+sys.path.insert(0, 'src')
+from gui.window_gui import WindowGUI
+from gui.window_logic import WindowLogic
 
 class DummyEntry:
     def __init__(self, value):
@@ -39,7 +42,7 @@ class DummyMaster:
 @pytest.fixture
 def window(monkeypatch):
     root = Tk()
-    win = Window(root)
+    win = WindowGUI(root)
     win.duration_entry = DummyEntry('10')
     win.interval_entry = DummyEntry('0.1')
     win.x_entry = DummyEntry('100')

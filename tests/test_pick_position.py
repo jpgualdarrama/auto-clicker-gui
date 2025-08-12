@@ -6,7 +6,10 @@ Covers:
 3. F8 does not set position if picking mode is not enabled
 """
 import pytest
-from src.gui.window import Window
+import sys
+sys.path.insert(0, 'src')
+from gui.window_gui import WindowGUI
+from gui.window_logic import WindowLogic
 from tkinter import Tk
 
 class DummyEntry:
@@ -22,7 +25,7 @@ class DummyEntry:
 def test_enable_position_pick_sets_flag():
     """Button click enables picking mode."""
     root = Tk()
-    win = Window(root)
+    win = WindowGUI(root)
     win.x_entry = DummyEntry('0')
     win.y_entry = DummyEntry('0')
     win._picking_position = False
@@ -33,7 +36,7 @@ def test_enable_position_pick_sets_flag():
 def test_set_position_from_mouse_sets_position(monkeypatch):
     """F8 sets position only when picking mode is enabled."""
     root = Tk()
-    win = Window(root)
+    win = WindowGUI(root)
     win.x_entry = DummyEntry('0')
     win.y_entry = DummyEntry('0')
     win._picking_position = True
@@ -47,7 +50,7 @@ def test_set_position_from_mouse_sets_position(monkeypatch):
 def test_set_position_from_mouse_ignored_if_not_picking(monkeypatch):
     """F8 does not set position if picking mode is not enabled."""
     root = Tk()
-    win = Window(root)
+    win = WindowGUI(root)
     win.x_entry = DummyEntry('0')
     win.y_entry = DummyEntry('0')
     win._picking_position = False

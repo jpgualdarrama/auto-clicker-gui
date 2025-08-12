@@ -10,7 +10,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, 'src')
-from gui.window import Window
+from gui.window_gui import WindowGUI
+from gui.window_logic import WindowLogic
 
 # Dummy master to avoid real Tkinter window creation
 
@@ -61,9 +62,9 @@ class DummyEntry:
 def window(monkeypatch):
     monkeypatch.setattr('keyboard.add_hotkey', lambda key, func: None)
     monkeypatch.setattr('keyboard.remove_hotkey', lambda key: None)
-    monkeypatch.setattr(Window, 'register_hotkeys', lambda self: None)
-    monkeypatch.setattr(Window, 'remove_hotkeys', lambda self: None)
-    win = Window(DummyMaster())
+    monkeypatch.setattr(WindowGUI, 'register_hotkeys', lambda self: None)
+    monkeypatch.setattr(WindowGUI, 'remove_hotkeys', lambda self: None)
+    win = WindowGUI(DummyMaster())
     # Patch widgets with dummy objects
     win.label = DummyLabel()
     win.start_button = DummyButton()
@@ -87,9 +88,9 @@ def test_hotkey_registration_and_removal(monkeypatch):
     remove_calls = []
     monkeypatch.setattr('keyboard.add_hotkey', lambda key, func: add_calls.append(key))
     monkeypatch.setattr('keyboard.remove_hotkey', lambda key: remove_calls.append(key))
-    monkeypatch.setattr(Window, 'register_hotkeys', lambda self: None)
-    monkeypatch.setattr(Window, 'remove_hotkeys', lambda self: None)
-    win = Window(DummyMaster())
+    monkeypatch.setattr(WindowGUI, 'register_hotkeys', lambda self: None)
+    monkeypatch.setattr(WindowGUI, 'remove_hotkeys', lambda self: None)
+    win = WindowGUI(DummyMaster())
     win.label = DummyLabel()
     win._on_close()
     assert 'f9' in add_calls
