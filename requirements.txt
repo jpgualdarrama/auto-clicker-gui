@@ -3,3 +3,4 @@ pillow
 pytest
 keyboard
 pyinstaller
+coverage
