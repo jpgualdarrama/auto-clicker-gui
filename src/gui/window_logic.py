@@ -226,36 +226,24 @@ class WindowLogic:
         if not self.is_clicking_event.is_set():
             self.is_clicking_event.set()
             actions_to_run = self.action_list.get_actions() if self.action_list.get_actions() else None
-            if actions_to_run:
-                for i, act in enumerate(actions_to_run):
-                    try:
-                        x = int(act["x"])
-                        y = int(act["y"])
-                        interval = float(act["interval"])
-                        if interval <= 0:
-                            raise ValueError
-                    except Exception:
-                        self.gui.label.config(text=f"Invalid action at row {i+1}. Check X, Y, Interval.")
-                        self.is_clicking_event.clear()
-                        return
+            if not self.action_list.validate_actions():
+                self.gui.label.config(text=f"Invalid action found. Check actions list.")
+                self.is_clicking_event.clear()
+                return
+
             # Show bubbles if preview is enabled
             if getattr(self.gui, 'preview_enabled', False):
                 self.gui.show_preview_bubbles()
-            strategy = self._get_mode_strategy()
-            if not strategy.prepare(self):
+
+            self._strategy = self._get_mode_strategy()
+            if not self._strategy.prepare(self):
                 self.is_clicking_event.clear()
                 return
+
             self.gui.label.config(text="Clicking...")
 
-            if actions_to_run:
-                self._click_actions = [dict(act) for act in actions_to_run]
-            else:
-                self._click_actions = [{
-                    "x": self.gui.default_mouse_x,
-                    "y": self.gui.default_mouse_y,
-                    "interval": 0.1,
-                    "type": "click"
-                }]
+            self._click_actions = [dict(act) for act in actions_to_run]
+
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
 
@@ -284,7 +272,7 @@ class WindowLogic:
                 if not action_cls:
                     raise ValueError(f"Unknown action type at index {idx}: {action_type}")
                 action_instances.append(action_cls())
-        strategy = self._get_mode_strategy()
-        strategy.run(self, actions, action_instances)
+
+        self._strategy.run(self, actions, action_instances)
         while not self.is_clicking_event.is_set():
             self.is_waiting_event.wait(0.1)

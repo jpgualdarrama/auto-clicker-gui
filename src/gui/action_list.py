@@ -74,6 +74,9 @@ class ActionList:
     def set_actions(self, actions):
         self._actions = actions
 
+    def validate_actions(self):
+        return all(self.validate_action(act) for act in self._actions)
+
     def validate_action(self, action):
         try:
             x = int(action["x"])
