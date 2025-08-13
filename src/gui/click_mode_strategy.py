@@ -11,9 +11,15 @@ class ClickModeStrategy(ABC):
         pass
 
 class ExecutionsMode(ClickModeStrategy):
+    def _parse_executions(self, value):
+        executions = int(value)
+        if executions > 0:
+            return executions
+        raise ValueError("Executions must be a positive integer.")
+
     def prepare(self, logic):
         try:
-            executions = logic.parse_executions(logic.gui.executions_entry.get())
+            executions = self._parse_executions(logic.gui.executions_entry.get())
         except ValueError:
             logic.gui.label.config(text="Invalid executions. Please enter a positive integer.")
             return False
@@ -46,9 +52,15 @@ class ExecutionsMode(ClickModeStrategy):
         logic.gui.label.config(text=f"Completed {logic._execution_limit} executions.")
 
 class DurationMode(ClickModeStrategy):
+    def _parse_duration(self, value):
+        duration = int(value)
+        if duration > 0:
+            return duration
+        raise ValueError("Duration must be a positive integer.")
+
     def prepare(self, logic):
         try:
-            duration = logic.parse_duration(logic.gui.duration_entry.get())
+            duration = self._parse_duration(logic.gui.duration_entry.get())
         except ValueError:
             logic.gui.label.config(text="Invalid duration. Please enter a positive integer.")
             return False
@@ -104,3 +116,12 @@ class IndefiniteMode(ClickModeStrategy):
                     if logic.is_waiting_event.wait(interval):
                         break
                     logic.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
+
+def get_click_mode_strategy(mode):
+    if mode == "indefinite":
+        return IndefiniteMode()
+    elif mode == "duration":
+        return DurationMode()
+    elif mode == "executions":
+        return ExecutionsMode()
+    return None

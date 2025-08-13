@@ -4,7 +4,7 @@ import keyboard
 import time
 from tkinter import filedialog, Entry
 from .action_list import ActionList, ACTIONS_REGISTRY
-from .click_mode_strategy import ClickModeStrategy, ExecutionsMode, DurationMode, IndefiniteMode
+from .click_mode_strategy import get_click_mode_strategy
 
 class WindowLogic:
     """
@@ -209,18 +209,6 @@ class WindowLogic:
             keyboard.remove_hotkey('f6')
             self.gui.label.config(text="Auto Clicker Tool")
 
-    def parse_duration(self, value):
-        duration = int(value)
-        if duration > 0:
-            return duration
-        raise ValueError("Duration must be a positive integer.")
-
-    def parse_executions(self, value):
-        executions = int(value)
-        if executions > 0:
-            return executions
-        raise ValueError("Executions must be a positive integer.")
-
     def start_clicking(self):
         print("Clicking started.")
         if not self.is_clicking_event.is_set():
@@ -232,10 +220,10 @@ class WindowLogic:
                 return
 
             # Show bubbles if preview is enabled
-            if getattr(self.gui, 'preview_enabled', False):
+            if self.gui.preview_enabled:
                 self.gui.show_preview_bubbles()
 
-            self._strategy = self._get_mode_strategy()
+            self._strategy = get_click_mode_strategy(self.gui.run_mode_var.get())
             if not self._strategy.prepare(self):
                 self.is_clicking_event.clear()
                 return
@@ -251,15 +239,6 @@ class WindowLogic:
         print("Clicking stopped.")
         self.is_clicking_event.clear()
         self.gui.label.config(text="Stopped")
-
-    def _get_mode_strategy(self):
-        mode = self.gui.run_mode_var.get()
-        if mode == "executions":
-            return ExecutionsMode()
-        elif mode == "duration":
-            return DurationMode()
-        else:
-            return IndefiniteMode()
 
     def _click_loop(self):
         actions = self._click_actions if hasattr(self, "_click_actions") else None
