@@ -13,3 +13,7 @@
 - [x] Support repeating individual actions
 - [x] Save/Load list of actions from file
 - [x] Preview clicks with bubbles on screen
+- [x] Add support for press and hold action
+- [ ] Add Duration column to action list (for use by actions that take more time than a click)
+- [ ] Add support for middle and right mouse button
+- [ ] Only allow user to enter a valid action type in the action list (could be a drop down, separate dialog that opens when the user enters cell in the type row, etc.)
