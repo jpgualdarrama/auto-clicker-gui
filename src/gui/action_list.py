@@ -1,5 +1,42 @@
 import csv
+import pyautogui
+import time
 
+# --- Action base and registry ---
+class BaseAction:
+    """
+    Base class for all actions. Subclass and implement execute().
+    """
+    def execute(self, x, y, interval=0.1, repeat=1):
+        raise NotImplementedError("Action must implement execute()")
+
+class ClickAction(BaseAction):
+    def execute(self, x, y, interval=0.1, repeat=1):
+        for _ in range(repeat):
+            pyautogui.click(x, y)
+
+class DoubleClickAction(BaseAction):
+    def execute(self, x, y, interval=0.1, repeat=1):
+        for _ in range(repeat):
+            pyautogui.doubleClick(x, y)
+
+# Press and Hold Action (left button only for now)
+class PressAndHoldAction(BaseAction):
+    def execute(self, x, y, interval=0.1, repeat=1, duration=0.1):
+        for _ in range(repeat):
+            pyautogui.mouseDown(x, y, button='left')
+            time.sleep(duration)
+            pyautogui.mouseUp(x, y, button='left')
+
+# Central registry of actions (all keys lowercase)
+ACTIONS_REGISTRY = {
+    "click": ClickAction,
+    "double click": DoubleClickAction,
+    "press and hold": PressAndHoldAction,
+    # Add new actions here
+}
+
+# --- ActionList for managing action data ---
 class ActionList:
     """
     Encapsulates management of the list of actions for the Auto Clicker GUI tool.
@@ -60,7 +97,7 @@ class ActionList:
                             "x": int(row["x"]),
                             "y": int(row["y"]),
                             "interval": float(row["interval"]),
-                            "type": row["type"],
+                            "type": row["type"].lower(),
                             "repeat": int(row["repeat"])
                         })
                     else:

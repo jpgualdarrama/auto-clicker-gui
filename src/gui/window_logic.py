@@ -3,7 +3,7 @@ import pyautogui
 import keyboard
 import time
 from tkinter import filedialog, Entry
-from .action_list import ActionList
+from .action_list import ActionList, ACTIONS_REGISTRY
 
 class WindowLogic:
     """
@@ -300,6 +300,17 @@ class WindowLogic:
         executions_done = 0
         duration_mode = (run_mode == "duration")
         start_time = time.time() if duration_mode else None
+
+        # Instantiate action instances before the loop
+        action_instances = []
+        if actions:
+            for idx, act in enumerate(actions):
+                action_type = act.get("type", "click").lower()
+                action_cls = ACTIONS_REGISTRY.get(action_type)
+                if not action_cls:
+                    raise ValueError(f"Unknown action type at index {idx}: {action_type}")
+                action_instances.append(action_cls())
+
         while self.is_clicking_event.is_set():
             if actions:
                 for idx, act in enumerate(actions):
@@ -308,13 +319,12 @@ class WindowLogic:
                     x = int(act["x"])
                     y = int(act["y"])
                     interval = float(act["interval"])
-                    action_type = act.get("type", "click")
                     repeat = int(act.get("repeat", 1))
+                    action_instance = action_instances[idx]
                     for r in range(repeat):
                         if not self.is_clicking_event.is_set():
                             break
-                        if action_type == "click":
-                            pyautogui.click(x, y)
+                        action_instance.execute(x, y, interval=interval, repeat=1)
                         # Wait for interval, but break early if is_waiting_event is cleared
                         if self.is_waiting_event.wait(interval):
                             break
