@@ -1,0 +1,73 @@
+import time
+from abc import ABC, abstractmethod
+
+class ClickModeStrategy(ABC):
+    @abstractmethod
+    def run(self, logic, actions, action_instances):
+        pass
+
+class ExecutionsMode(ClickModeStrategy):
+    def run(self, logic, actions, action_instances):
+        executions_done = 0
+        while logic.is_clicking_event.is_set() and executions_done < logic._execution_limit:
+            for idx, act in enumerate(actions):
+                if not logic.is_clicking_event.is_set():
+                    break
+                x = int(act["x"])
+                y = int(act["y"])
+                interval = float(act["interval"])
+                repeat = int(act.get("repeat", 1))
+                action_instance = action_instances[idx]
+                for r in range(repeat):
+                    if not logic.is_clicking_event.is_set():
+                        break
+                    action_instance.execute(x, y, interval=interval, repeat=1)
+                    if logic.is_waiting_event.wait(interval):
+                        break
+                    logic.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
+            executions_done += 1
+        logic.stop_clicking()
+        logic.gui.label.config(text=f"Completed {logic._execution_limit} executions.")
+
+class DurationMode(ClickModeStrategy):
+    def run(self, logic, actions, action_instances):
+        start_time = time.time()
+        while logic.is_clicking_event.is_set() and (time.time() - start_time) < logic._remaining_time:
+            for idx, act in enumerate(actions):
+                if not logic.is_clicking_event.is_set():
+                    break
+                x = int(act["x"])
+                y = int(act["y"])
+                interval = float(act["interval"])
+                repeat = int(act.get("repeat", 1))
+                action_instance = action_instances[idx]
+                for r in range(repeat):
+                    if not logic.is_clicking_event.is_set():
+                        break
+                    action_instance.execute(x, y, interval=interval, repeat=1)
+                    if logic.is_waiting_event.wait(interval):
+                        break
+                    logic.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
+                if (time.time() - start_time) >= logic._remaining_time:
+                    logic.stop_clicking()
+                    logic.gui.label.config(text="Time is up. Stopped.")
+                    return
+
+class IndefiniteMode(ClickModeStrategy):
+    def run(self, logic, actions, action_instances):
+        while logic.is_clicking_event.is_set():
+            for idx, act in enumerate(actions):
+                if not logic.is_clicking_event.is_set():
+                    break
+                x = int(act["x"])
+                y = int(act["y"])
+                interval = float(act["interval"])
+                repeat = int(act.get("repeat", 1))
+                action_instance = action_instances[idx]
+                for r in range(repeat):
+                    if not logic.is_clicking_event.is_set():
+                        break
+                    action_instance.execute(x, y, interval=interval, repeat=1)
+                    if logic.is_waiting_event.wait(interval):
+                        break
+                    logic.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")

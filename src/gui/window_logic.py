@@ -4,6 +4,7 @@ import keyboard
 import time
 from tkinter import filedialog, Entry
 from .action_list import ActionList, ACTIONS_REGISTRY
+from .click_mode_strategy import ClickModeStrategy, ExecutionsMode, DurationMode, IndefiniteMode
 
 class WindowLogic:
     """
@@ -293,14 +294,17 @@ class WindowLogic:
         self.is_clicking_event.clear()
         self.gui.label.config(text="Stopped")
 
+    def _get_mode_strategy(self):
+        mode = self.gui.run_mode_var.get()
+        if mode == "executions":
+            return ExecutionsMode()
+        elif mode == "duration":
+            return DurationMode()
+        else:
+            return IndefiniteMode()
+
     def _click_loop(self):
         actions = self._click_actions if hasattr(self, "_click_actions") else None
-        run_mode = self.gui.run_mode_var.get()
-        executions_limit = self._execution_limit
-        executions_done = 0
-        duration_mode = (run_mode == "duration")
-        start_time = time.time() if duration_mode else None
-
         # Instantiate action instances before the loop
         action_instances = []
         if actions:
@@ -310,35 +314,7 @@ class WindowLogic:
                 if not action_cls:
                     raise ValueError(f"Unknown action type at index {idx}: {action_type}")
                 action_instances.append(action_cls())
-
-        while self.is_clicking_event.is_set():
-            if actions:
-                for idx, act in enumerate(actions):
-                    if not self.is_clicking_event.is_set():
-                        break
-                    x = int(act["x"])
-                    y = int(act["y"])
-                    interval = float(act["interval"])
-                    repeat = int(act.get("repeat", 1))
-                    action_instance = action_instances[idx]
-                    for r in range(repeat):
-                        if not self.is_clicking_event.is_set():
-                            break
-                        action_instance.execute(x, y, interval=interval, repeat=1)
-                        # Wait for interval, but break early if is_waiting_event is cleared
-                        if self.is_waiting_event.wait(interval):
-                            break
-                        self.gui.label.config(text=f"Running action {idx+1}/{len(actions)} (repeat {r+1}/{repeat}) at ({x},{y})")
-                        if duration_mode and (time.time() - start_time) >= self._remaining_time:
-                            self.stop_clicking()
-                            self.gui.label.config(text="Time is up. Stopped.")
-                            return
-                    if not self.is_clicking_event.is_set():
-                        break
-                executions_done += 1
-                if executions_limit is not None and executions_done >= executions_limit:
-                    self.stop_clicking()
-                    self.gui.label.config(text=f"Completed {executions_limit} executions.")
-                    return
+        strategy = self._get_mode_strategy()
+        strategy.run(self, actions, action_instances)
         while not self.is_clicking_event.is_set():
             self.is_waiting_event.wait(0.1)
