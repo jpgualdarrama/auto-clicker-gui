@@ -3,10 +3,26 @@ from abc import ABC, abstractmethod
 
 class ClickModeStrategy(ABC):
     @abstractmethod
+    def prepare(self, logic):
+        pass
+
+    @abstractmethod
     def run(self, logic, actions, action_instances):
         pass
 
 class ExecutionsMode(ClickModeStrategy):
+    def prepare(self, logic):
+        try:
+            executions = logic.parse_executions(logic.gui.executions_entry.get())
+        except ValueError:
+            logic.gui.label.config(text="Invalid executions. Please enter a positive integer.")
+            return False
+        logic._timer_running = False
+        logic._remaining_time = 0
+        logic._execution_limit = executions
+        logic._executions_done = 0
+        return True
+
     def run(self, logic, actions, action_instances):
         executions_done = 0
         while logic.is_clicking_event.is_set() and executions_done < logic._execution_limit:
@@ -30,6 +46,17 @@ class ExecutionsMode(ClickModeStrategy):
         logic.gui.label.config(text=f"Completed {logic._execution_limit} executions.")
 
 class DurationMode(ClickModeStrategy):
+    def prepare(self, logic):
+        try:
+            duration = logic.parse_duration(logic.gui.duration_entry.get())
+        except ValueError:
+            logic.gui.label.config(text="Invalid duration. Please enter a positive integer.")
+            return False
+        logic._timer_running = True
+        logic._remaining_time = duration
+        logic._execution_limit = None
+        return True
+
     def run(self, logic, actions, action_instances):
         start_time = time.time()
         while logic.is_clicking_event.is_set() and (time.time() - start_time) < logic._remaining_time:
@@ -54,6 +81,12 @@ class DurationMode(ClickModeStrategy):
                     return
 
 class IndefiniteMode(ClickModeStrategy):
+    def prepare(self, logic):
+        logic._timer_running = False
+        logic._remaining_time = 0
+        logic._execution_limit = None
+        return True
+
     def run(self, logic, actions, action_instances):
         while logic.is_clicking_event.is_set():
             for idx, act in enumerate(actions):

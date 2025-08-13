@@ -221,21 +221,10 @@ class WindowLogic:
             return executions
         raise ValueError("Executions must be a positive integer.")
 
-    def _update_timer(self):
-        if self._timer_running and self.is_clicking_event.is_set():
-            self._remaining_time -= 1
-            self.gui.label.config(text=f"Clicking... ({self._remaining_time}s left)")
-            if self._remaining_time <= 0:
-                self.stop_clicking()
-                self.gui.label.config(text="Time is up. Stopped.")
-            else:
-                self.gui.master.after(1000, self._update_timer)
-
     def start_clicking(self):
         print("Clicking started.")
         if not self.is_clicking_event.is_set():
             self.is_clicking_event.set()
-            run_mode = self.gui.run_mode_var.get()
             actions_to_run = self.action_list.get_actions() if self.action_list.get_actions() else None
             if actions_to_run:
                 for i, act in enumerate(actions_to_run):
@@ -247,34 +236,17 @@ class WindowLogic:
                             raise ValueError
                     except Exception:
                         self.gui.label.config(text=f"Invalid action at row {i+1}. Check X, Y, Interval.")
+                        self.is_clicking_event.clear()
                         return
             # Show bubbles if preview is enabled
             if getattr(self.gui, 'preview_enabled', False):
                 self.gui.show_preview_bubbles()
-            if run_mode == "duration":
-                try:
-                    duration = self.parse_duration(self.gui.duration_entry.get())
-                except ValueError:
-                    self.gui.label.config(text="Invalid duration. Please enter a positive integer.")
-                    return
-                self._timer_running = True
-                self._remaining_time = duration
-                self._execution_limit = None
-            elif run_mode == "executions":
-                try:
-                    executions = self.parse_executions(self.gui.executions_entry.get())
-                except ValueError:
-                    self.gui.label.config(text="Invalid executions. Please enter a positive integer.")
-                    return
-                self._timer_running = False
-                self._remaining_time = 0
-                self._execution_limit = executions
-            else:
-                self._timer_running = False
-                self._remaining_time = 0
-                self._execution_limit = None
+            strategy = self._get_mode_strategy()
+            if not strategy.prepare(self):
+                self.is_clicking_event.clear()
+                return
             self.gui.label.config(text="Clicking...")
-            self._executions_done = 0
+
             if actions_to_run:
                 self._click_actions = [dict(act) for act in actions_to_run]
             else:
@@ -286,8 +258,6 @@ class WindowLogic:
                 }]
             self.click_thread = threading.Thread(target=self._click_loop, daemon=True)
             self.click_thread.start()
-            if run_mode == "duration":
-                self.gui.master.after(1000, self._update_timer)
 
     def stop_clicking(self):
         print("Clicking stopped.")
